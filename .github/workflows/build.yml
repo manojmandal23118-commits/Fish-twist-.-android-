@@ -22,14 +22,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build Web-based APK via WebView wrapper
+      - name: Check Web Assets and Prepare Build
         run: |
-          echo "Preparing web assets..."
-          # Ensures index.html is at the root for packaging
-          if [ ! -f "index.html" ]; then
-            echo "Error: index.html not found at root directory!"
+          echo "Checking project files..."
+          if [ -f "index.html" ]; then
+            echo "Success: index.html found at root directory!"
+          else
+            echo "Error: index.html not found! Please ensure your web files are in the root."
             exit 1
-          - name: Build Debug APK placeholder/wrapper
-          echo "Building APK package..."
-          # This runs standard Gradle build if a wrapper exists, or compiles the web files into a container.
+          fi
+          echo "Web project structure is valid and ready."
           
