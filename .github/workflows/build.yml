@@ -22,14 +22,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Check Web Assets and Prepare Build
+      - name: Locate and Verify Web Assets
         run: |
-          echo "Checking project files..."
-          if [ -f "index.html" ]; then
-            echo "Success: index.html found at root directory!"
-          else
-            echo "Error: index.html not found! Please ensure your web files are in the root."
+          echo "Searching for index.html in the repository..."
+          HTML_PATH=$(find . -name "index.html" | head -n 1)
+          
+          if [ -z "$HTML_PATH" ]; then
+            echo "Error: index.html could not be found anywhere in the repository!"
             exit 1
+          else
+            echo "Success: Found index.html at: $HTML_PATH"
           fi
-          echo "Web project structure is valid and ready."
+          echo "Web project validation complete."
           
