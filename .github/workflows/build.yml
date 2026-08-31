@@ -13,9 +13,21 @@ jobs:
 
       - name: Unzip project file
         run: |
-          # আপনার জিপ ফাইলের নাম এখানে বসানো আছে
-          unzip "fish Twist.zip" -d extracted_project
+          # যেকোনো নামের জিপ ফাইল নিজে থেকেই খুঁজে বের করে আনজিপ করবে
+          unzip "*.zip" -d extracted_project
+
+      - name: Find Project Root
+        id: find_root
+        run: |
+          # জিপ ফাইলের ভেতর মূল ফোল্ডারটি কোথায় আছে তা খুঁজে বের করা
           cd extracted_project
+          # যদি জিপের ভেতরে আরেকটি ফোল্ডার থাকে, সেটি খুঁজে নেবে
+          PROJECT_DIR=$(find . -maxdepth 2 -name "pubspec.yaml" -printf '%h\n' | head -n 1)
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "pubspec.yaml not found!"
+            exit 1
+          fi
+          echo "path=extracted_project/$PROJECT_DIR" >> $GITHUB_OUTPUT
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -30,18 +42,16 @@ jobs:
           channel: 'stable'
 
       - name: Install dependencies
-        run: |
-          cd extracted_project
-          flutter pub get
+        working-directory: ${{ steps.find_root.outputs.path }}
+        run: flutter pub get
 
       - name: Build APK
-        run: |
-          cd extracted_project
-          flutter build apk --release
+        working-directory: ${{ steps.find_root.outputs.path }}
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: extracted_project/build/app/outputs/flutter-apk/app-release.apk
+          path: ${{ steps.find_root.outputs.path }}/build/app/outputs/flutter-apk/app-release.apk
           
