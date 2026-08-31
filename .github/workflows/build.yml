@@ -13,21 +13,21 @@ jobs:
 
       - name: Unzip project file
         run: |
-          # যেকোনো নামের জিপ ফাইল নিজে থেকেই খুঁজে বের করে আনজিপ করবে
-          unzip "*.zip" -d extracted_project
+          mkdir -p extracted_project
+          unzip -q "*.zip" -d extracted_project
 
-      - name: Find Project Root
-        id: find_root
+      - name: Locate Flutter Project
         run: |
-          # জিপ ফাইলের ভেতর মূল ফোল্ডারটি কোথায় আছে তা খুঁজে বের করা
-          cd extracted_project
-          # যদি জিপের ভেতরে আরেকটি ফোল্ডার থাকে, সেটি খুঁজে নেবে
-          PROJECT_DIR=$(find . -maxdepth 2 -name "pubspec.yaml" -printf '%h\n' | head -n 1)
-          if [ -z "$PROJECT_DIR" ]; then
-            echo "pubspec.yaml not found!"
+          # খুঁজে বের করা ফ্লাটার প্রজেক্ট কোথায় আছে এবং বাইরে নিয়ে আসা
+          PUBSPEC=$(find extracted_project -name "pubspec.yaml" -print -quit)
+          if [ -z "$PUBSPEC" ]; then
+            echo "Error: pubspec.yaml not found anywhere in the zip file!"
             exit 1
           fi
-          echo "path=extracted_project/$PROJECT_DIR" >> $GITHUB_OUTPUT
+          PROJECT_DIR=$(dirname "$PUBSPEC")
+          echo "Found flutter project at: $PROJECT_DIR"
+          rsync -avq "$PROJECT_DIR/" ./
+          rm -rf extracted_project
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -42,16 +42,14 @@ jobs:
           channel: 'stable'
 
       - name: Install dependencies
-        working-directory: ${{ steps.find_root.outputs.path }}
         run: flutter pub get
 
       - name: Build APK
-        working-directory: ${{ steps.find_root.outputs.path }}
         run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: ${{ steps.find_root.outputs.path }}/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           
