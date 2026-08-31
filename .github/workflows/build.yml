@@ -1,0 +1,47 @@
+name: Build APK from Zip
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unzip project file
+        run: |
+          # আপনার জিপ ফাইলের নাম এখানে বসানো আছে
+          unzip "fish Twist.zip" -d extracted_project
+          cd extracted_project
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.x'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: |
+          cd extracted_project
+          flutter pub get
+
+      - name: Build APK
+        run: |
+          cd extracted_project
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: extracted_project/build/app/outputs/flutter-apk/app-release.apk
+          
